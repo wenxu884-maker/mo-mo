@@ -1573,12 +1573,68 @@ if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){stor
     alert('已恢复至初始状态。');
   });
 
-  renderPanelBehaviors();renderPanelStory();renderPanelTagManage();
+  // ── Auto-load bundled data ──
+  async function autoLoadData(){
+    // Skip if data already exists
+    if(behaviors.length>4||galleryPhotos.length>0||playlist.length>0)return false;
+    try{
+      var resp=await fetch('data/manifest.json');
+      if(!resp.ok)return false;
+      var data=await resp.json();
+      async function loadBlob(path){var r=await fetch('data/'+path);if(!r.ok)return null;var b=await r.blob();return URL.createObjectURL(b);}
+      var tasks=[];
+      // Behaviors
+      if(data.behaviors){behaviors.length=0;data.behaviors.forEach(function(b){behaviors.push(b);});
+      behaviors.forEach(function(b){if(b.photoFile){tasks.push(loadBlob(b.photoFile).then(function(url){if(url)b.photoUrl=url;}));delete b.photoFile;}});}
+      // Story items
+      if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){storyItems.push(s);});
+      storyItems.forEach(function(s){if(s.photoFile){tasks.push(loadBlob(s.photoFile).then(function(url){if(url)s.photoUrl=url;}));delete s.photoFile;}});}
+      // Oracles & rules
+      if(data.oracles){oracles.length=0;data.oracles.forEach(function(o){oracles.push(o);});}
+      if(data.rules){rules.length=0;data.rules.forEach(function(r){rules.push(r);});}
+      // Tags & cover
+      if(data.allTags){ALL_TAGS.length=0;data.allTags.forEach(function(t){ALL_TAGS.push(t);});}
+      if(data.photoTags)photoTags=data.photoTags;
+      if(data.coverChips){coverChips.length=0;data.coverChips.forEach(function(c){coverChips.push(c);});}
+      if(data.cover){var t=document.getElementById('mpCoverTitle');if(t&&data.cover.title)t.value=data.cover.title;var s=document.getElementById('mpCoverSub');if(s&&data.cover.subtitle)s.value=data.cover.subtitle;var b=document.getElementById('mpCoverBadge');if(b&&data.cover.badge)b.value=data.cover.badge;}
+      // Gallery photos
+      if(data.galleryPhotos&&data.galleryPhotos.length){data.galleryPhotos.forEach(function(p){if(p.file){tasks.push(loadBlob(p.file).then(function(url){if(url)galleryPhotos.push({url:url,filename:p.filename,id:p.id});}));}});}
+      // Videos
+      if(data.videoSlots&&data.videoSlots.length){videoSlots.forEach(function(v){if(v.url)URL.revokeObjectURL(v.url);});videoSlots=[];data.videoSlots.forEach(function(v){if(v.file){tasks.push(loadBlob(v.file).then(function(url){if(url)videoSlots.push({id:_vsid(),url:url,name:v.name||'视频'});}));}});}
+      // Avatar
+      if(data.avatar){tasks.push(loadBlob(data.avatar).then(function(url){if(url){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=url;img.style.display='block';if(ph)ph.style.display='none';}}}));}
+      // Music
+      if(data.playlist&&data.playlist.length){data.playlist.forEach(function(t){if(t.file){tasks.push(loadBlob(t.file).then(function(url){if(url)playlist.push({url:url,name:t.name||'音乐'});}));}});}
+      if(typeof data.musicIdx==='number')pIdx=data.musicIdx;
+      await Promise.all(tasks);
+      // Post-load fixes
+      _defaultBehaviors=JSON.parse(JSON.stringify(behaviors));
+      _defaultStoryItems=JSON.parse(JSON.stringify(storyItems));
+      if(!videoSlots.filter(function(v){return v.url;}).length)addVideoSlot();
+      if(videoSlots.filter(function(v){return v.url;}).length)rebuildVideoGrid();
+      if(playlist.length&&pIdx>=playlist.length)pIdx=0;
+      if(playlist.length)loadTrack(pIdx);
+      updateMusicNow();
+      // Render everything
+      if(typeof renderBehaviors==='function')renderBehaviors();
+      if(typeof renderStory==='function')renderStory();
+      if(typeof renderRules==='function')renderRules();
+      renderPanelBehaviors();renderPanelStory();renderPanelTagManage();
+      if(typeof renderTagBar==='function')renderTagBar();
+      if(typeof refreshView==='function')refreshView();
+      renderPanelVideos();renderPanelPhotos();renderPanelTagRow();renderPanelMusic();
+      if(typeof renderCoverChips==='function')renderCoverChips();
+      if(typeof syncCoverToPage==='function')syncCoverToPage();
+      console.log('✅ 自动加载数据完成 ('+galleryPhotos.length+'张照片, '+behaviors.length+'个行为, '+videoSlots.filter(function(v){return v.url;}).length+'个视频, '+playlist.length+'首音乐)');
+      return true;
+    }catch(e){console.log('自动加载跳过:',e.message);return false;}
+  }
 
-  // Initial renders
-  renderPanelPhotos();
-  renderPanelTagRow();
-  renderPanelMusic();
+  var _autoLoaded=false;
+  autoLoadData().then(function(ok){_autoLoaded=ok;if(!ok){
+    renderPanelBehaviors();renderPanelStory();renderPanelTagManage();
+    renderPanelPhotos();renderPanelTagRow();renderPanelMusic();
+  }});
 })();
 
 </script>
