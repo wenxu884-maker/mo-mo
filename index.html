@@ -649,7 +649,7 @@ footer em{color:var(--gold2);font-style:normal}
     <button class="mp-btn" id="mpImport">📤 导入数据</button>
     <button class="mp-btn mp-btn-reset" id="mpReset" style="margin-left:auto">🔄 重置</button>
   </div>
-  <input type="file" id="mpImportInput" accept=".json" style="display:none">
+  <input type="file" id="mpImportInput" accept=".json,.zip" style="display:none">
 </div>
 
 <!-- ═══ PAGE CONTENT ═══ -->
@@ -787,6 +787,7 @@ footer em{color:var(--gold2);font-style:normal}
   <img id="lightboxImg" src="" alt="">
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ═══════════════════════════════════════════
 // AUTO-IMPORT (published site)
@@ -1436,44 +1437,100 @@ function rebuildVideoGrid(){
   function blobToBase64(url){return fetch(url).then(function(r){return r.blob();}).then(function(b){return new Promise(function(ok,no){var rd=new FileReader();rd.onload=function(){ok(rd.result);};rd.onerror=no;rd.readAsDataURL(b);});});}
   function exportData(){
     var btn=document.getElementById('mpExport');if(btn){btn.textContent='⏳ 打包中...';btn.disabled=true;}
-    var pp=galleryPhotos.map(function(p){return blobToBase64(p.url).then(function(b64){return{filename:p.filename,id:p.id,data:b64};}).catch(function(){return{filename:p.filename,id:p.id,data:null};});});
-    var vp=videoSlots.filter(function(v){return v.url;}).map(function(v){return blobToBase64(v.url).then(function(b64){return{name:v.name,data:b64};}).catch(function(){return{name:v.name,data:null};});});
-    // Convert behavior photos to base64
-    var bp=[];behaviors.forEach(function(b,idx){if(b.photoUrl)bp.push(blobToBase64(b.photoUrl).then(function(b64){return{idx:idx,data:b64};}).catch(function(){return{idx:idx,data:null};}));});
-    // Convert story photos to base64
-    var sp=[];storyItems.forEach(function(s,idx){if(s.photoUrl)sp.push(blobToBase64(s.photoUrl).then(function(b64){return{idx:idx,data:b64};}).catch(function(){return{idx:idx,data:null};}));});
-    // Convert avatar to base64
-    var heroImg=document.getElementById('heroImg');var ha=heroImg&&heroImg.src&&heroImg.style.display!=='none'?blobToBase64(heroImg.src).catch(function(){return null;}):Promise.resolve(null);
-    // Convert music playlist to base64
-    var mp=playlist.map(function(t,i){return blobToBase64(t.url).then(function(b64){return{idx:i,name:t.name,data:b64};}).catch(function(){return{idx:i,name:t.name,data:null};});});
-    Promise.all(pp.concat(vp).concat(bp).concat(sp).concat([ha]).concat(mp)).then(function(results){
-      var pd=results.slice(0,galleryPhotos.length),vd=results.slice(galleryPhotos.length,galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length);
-      var bd=results.slice(galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length,galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length+bp.length);
-      var sd=results.slice(galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length+bp.length,galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length+bp.length+sp.length);
-      var heroData=results[galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length+bp.length+sp.length];
-      var md=results.slice(galleryPhotos.length+videoSlots.filter(function(v){return v.url;}).length+bp.length+sp.length+1);
-      // Build behavior data with base64 photos
-      var beOut=behaviors.map(function(b,i){var o={title:b.title,warn:b.warn,back:b.back,tag:b.tag,ph:b.ph};var match=bd.find(function(r){return r.idx===i;});if(match&&match.data)o.photoData=match.data;return o;});
-      // Build story data with base64 photos
-      var stOut=storyItems.map(function(s,i){var o={};for(var k in s)if(k!=='photoUrl')o[k]=s[k];var match=sd.find(function(r){return r.idx===i;});if(match&&match.data)o.photoData=match.data;return o;});
-      // Build music playlist data
-      var muOut=md.map(function(r){return{name:r.name,data:r.data};});
-      var data={version:3,exportedAt:new Date().toISOString(),behaviors:beOut,storyItems:stOut,oracles:oracles,rules:rules,allTags:ALL_TAGS,photoTags:photoTags,coverChips:coverChips,cover:{title:document.getElementById('mpCoverTitle')?document.getElementById('mpCoverTitle').value:'墨墨 momo',subtitle:document.getElementById('mpCoverSub')?document.getElementById('mpCoverSub').value:'',badge:document.getElementById('mpCoverBadge')?document.getElementById('mpCoverBadge').value:''},heroImg:heroData,playlist:muOut,musicIdx:pIdx,galleryPhotos:pd,videoSlots:vd};
-      var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
-      var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='momo-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+    function buf(url){return fetch(url).then(function(r){return r.arrayBuffer();});}
+    function ext(url,fb){var m=url.match(/^data:([^;]+)/);if(m){var t=m[1].split('/')[1];if(t==='jpeg')t='jpg';return t||fb;}var b=url.split('.').pop();if(b&&b.length<=5)return b;return fb;}
+
+    var zip=new JSZip();
+    var bF=zip.folder('behaviors'),sF=zip.folder('story'),pF=zip.folder('photos'),vF=zip.folder('videos'),mF=zip.folder('music');
+    var tasks=[];
+
+    var gpOut=[];galleryPhotos.forEach(function(p,i){var fn='photo_'+i+'.'+ext(p.url,'jpg');gpOut.push({filename:p.filename,id:p.id,file:'photos/'+fn});tasks.push(buf(p.url).then(function(b){pF.file(fn,b);}));});
+    var vlOut=[];videoSlots.filter(function(v){return v.url;}).forEach(function(v,i){var fn='video_'+i+'.'+ext(v.url,'mp4');vlOut.push({name:v.name,file:'videos/'+fn});tasks.push(buf(v.url).then(function(b){vF.file(fn,b);}));});
+    var beOut=[];behaviors.forEach(function(b,i){var o={title:b.title,warn:b.warn,back:b.back,tag:b.tag,ph:b.ph};if(b.photoUrl){var fn='beh_'+i+'.'+ext(b.photoUrl,'jpg');o.photoFile='behaviors/'+fn;tasks.push(buf(b.photoUrl).then(function(d){bF.file(fn,d);}));}beOut.push(o);});
+    var stOut=[];storyItems.forEach(function(s,i){var o={};for(var k in s)if(k!=='photoUrl')o[k]=s[k];if(s.photoUrl){var fn='st_'+i+'.'+ext(s.photoUrl,'jpg');o.photoFile='story/'+fn;tasks.push(buf(s.photoUrl).then(function(d){sF.file(fn,d);}));}stOut.push(o);});
+    var heroImg=document.getElementById('heroImg');var hasAv=false;if(heroImg&&heroImg.src&&heroImg.style.display!=='none'){hasAv=true;tasks.push(buf(heroImg.src).then(function(d){zip.file('avatar.png',d);}));}
+    var muOut=[];playlist.forEach(function(t,i){var fn='track_'+i+'.mp3';muOut.push({name:t.name,file:'music/'+fn});tasks.push(buf(t.url).then(function(d){mF.file(fn,d);}));});
+
+    Promise.all(tasks).then(function(){
+      var manifest={version:4,exportedAt:new Date().toISOString(),behaviors:beOut,storyItems:stOut,oracles:oracles,rules:rules,allTags:ALL_TAGS,photoTags:photoTags,coverChips:coverChips,cover:{title:document.getElementById('mpCoverTitle')?document.getElementById('mpCoverTitle').value:'墨墨 momo',subtitle:document.getElementById('mpCoverSub')?document.getElementById('mpCoverSub').value:'',badge:document.getElementById('mpCoverBadge')?document.getElementById('mpCoverBadge').value:''},avatar:hasAv?'avatar.png':null,galleryPhotos:gpOut,videoSlots:vlOut,playlist:muOut,musicIdx:pIdx};
+      zip.file('manifest.json',JSON.stringify(manifest));
+      return zip.generateAsync({type:'blob'});
+    }).then(function(blob){
+      var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='momo-backup-'+new Date().toISOString().slice(0,10)+'.zip';a.click();URL.revokeObjectURL(a.href);
       if(btn){btn.textContent='📥 导出数据';btn.disabled=false;}
-    }).catch(function(){alert('导出失败：部分文件无法读取。');if(btn){btn.textContent='📥 导出数据';btn.disabled=false;}});
+    }).catch(function(err){console.error(err);alert('导出失败：部分文件无法读取。');if(btn){btn.textContent='📥 导出数据';btn.disabled=false;}});
   }
   var mpExport=document.getElementById('mpExport');if(mpExport)mpExport.addEventListener('click',exportData);
 
   // ── Data Import ──
   var mpImport=document.getElementById('mpImport'),mpImportInput=document.getElementById('mpImportInput');
-  if(mpImport&&mpImportInput){mpImport.addEventListener('click',function(){mpImportInput.click();});mpImportInput.addEventListener('change',function(e){var file=e.target.files[0];if(!file)return;if(!confirm('导入将覆盖当前所有内容数据。确定继续？')){e.target.value='';return;}var reader=new FileReader();reader.onload=function(ev){try{var data=JSON.parse(ev.target.result);if(data.behaviors){behaviors.length=0;data.behaviors.forEach(function(b){behaviors.push(b);});behaviors.forEach(function(b){if(b.photoData){var arr=b.photoData.split(','),mime=arr[0].match(/data:([^;]+)/);if(mime){var bytes=atob(arr[1]),u8=new Uint8Array(bytes.length);for(var j=0;j<bytes.length;j++)u8[j]=bytes.charCodeAt(j);b.photoUrl=URL.createObjectURL(new Blob([u8],{type:mime[1]}));}delete b.photoData;}});}
-if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){storyItems.push(s);});storyItems.forEach(function(s){if(s.photoData){var arr=s.photoData.split(','),mime=arr[0].match(/data:([^;]+)/);if(mime){var bytes=atob(arr[1]),u8=new Uint8Array(bytes.length);for(var j=0;j<bytes.length;j++)u8[j]=bytes.charCodeAt(j);s.photoUrl=URL.createObjectURL(new Blob([u8],{type:mime[1]}));}delete s.photoData;}});}if(data.oracles){oracles.length=0;data.oracles.forEach(function(o){oracles.push(o);});}if(data.rules){rules.length=0;data.rules.forEach(function(r){rules.push(r);});}if(data.allTags){ALL_TAGS.length=0;data.allTags.forEach(function(t){ALL_TAGS.push(t);});}if(data.photoTags)photoTags=data.photoTags;if(data.coverChips){coverChips.length=0;data.coverChips.forEach(function(c){coverChips.push(c);});renderCoverChips();syncCoverToPage();}if(data.cover){var t2=document.getElementById('mpCoverTitle');if(t2&&data.cover.title)t2.value=data.cover.title;var s2=document.getElementById('mpCoverSub');if(s2&&data.cover.subtitle)s2.value=data.cover.subtitle;var b2=document.getElementById('mpCoverBadge');if(b2&&data.cover.badge)b2.value=data.cover.badge;syncCoverToPage();}// Restore photos from base64 if v2 export
-    if(data.galleryPhotos&&data.galleryPhotos.length){galleryPhotos.forEach(function(p){URL.revokeObjectURL(p.url);});galleryPhotos=[];pnlSelectedPhotos.clear();data.galleryPhotos.forEach(function(p){if(p.data){galleryPhotos.push({url:p.data,filename:p.filename||p.data.slice(0,30),id:p.id||('r_'+Math.random().toString(36).slice(2,10))});}});}// Restore videos from base64
-    if(data.videoSlots&&data.videoSlots.length){videoSlots.forEach(function(v){if(v.url)URL.revokeObjectURL(v.url);});videoSlots=[];data.videoSlots.forEach(function(v){if(v.data){videoSlots.push({id:_vsid(),url:v.data,name:v.name||v.title||'视频'});}});if(!videoSlots.length)videoSlots.push({id:_vsid(),url:'',name:''});rebuildVideoGrid();}// Restore avatar from base64
-    if(data.heroImg){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=data.heroImg;img.style.display='block';if(ph)ph.style.display='none';}}// Restore music playlist
-    if(data.playlist&&data.playlist.length){playlist.forEach(function(t){URL.revokeObjectURL(t.url);});playlist=[];data.playlist.forEach(function(t){if(t.data)playlist.push({url:t.data,name:t.name||'音乐'});});}if(typeof data.musicIdx==='number')pIdx=data.musicIdx;if(playlist.length&&pIdx>=playlist.length)pIdx=0;if(playlist.length)loadTrack(pIdx);updateMusicNow();if(typeof renderBehaviors==='function')renderBehaviors();if(typeof renderStory==='function')renderStory();if(typeof renderRules==='function')renderRules();renderPanelBehaviors();renderPanelStory();renderPanelTagManage();if(typeof renderTagBar==='function')renderTagBar();if(typeof refreshView==='function')refreshView();if(typeof renderPanelVideos==='function')renderPanelVideos();if(typeof renderPanelPhotos==='function')renderPanelPhotos();if(typeof renderPanelTagRow==='function')renderPanelTagRow();if(typeof renderPanelMusic==='function')renderPanelMusic();alert('数据导入成功！');}catch(err){alert('导入失败：文件格式不正确。');}};reader.readAsText(file);e.target.value='';});}
+  if(mpImport&&mpImportInput){mpImport.addEventListener('click',function(){mpImportInput.click();});
+  mpImportInput.addEventListener('change',function(e){var file=e.target.files[0];if(!file)return;if(!confirm('导入将覆盖当前所有内容数据。确定继续？')){e.target.value='';return;}
+  var isZip=file.name.toLowerCase().endsWith('.zip');
+  if(isZip){
+    JSZip.loadAsync(file).then(function(zip){
+      var mf=zip.file('manifest.json');if(!mf)throw new Error('manifest.json not found');
+      return mf.async('string').then(function(txt){
+        var data=JSON.parse(txt);
+        // Helper: load file from zip as blob URL
+        function loadBlob(zipPath){var f=zip.file(zipPath);if(!f)return Promise.resolve(null);return f.async('blob').then(function(b){return URL.createObjectURL(b);});}
+        var loadTasks=[];
+        // Restore behaviors
+        if(data.behaviors){behaviors.length=0;data.behaviors.forEach(function(b){behaviors.push(b);});
+        behaviors.forEach(function(b){if(b.photoFile){loadTasks.push(loadBlob(b.photoFile).then(function(url){if(url)b.photoUrl=url;}));delete b.photoFile;}});}
+        // Restore story items
+        if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){storyItems.push(s);});
+        storyItems.forEach(function(s){if(s.photoFile){loadTasks.push(loadBlob(s.photoFile).then(function(url){if(url)s.photoUrl=url;}));delete s.photoFile;}});}
+        if(data.oracles){oracles.length=0;data.oracles.forEach(function(o){oracles.push(o);});}
+        if(data.rules){rules.length=0;data.rules.forEach(function(r){rules.push(r);});}
+        if(data.allTags){ALL_TAGS.length=0;data.allTags.forEach(function(t){ALL_TAGS.push(t);});}
+        if(data.photoTags)photoTags=data.photoTags;
+        if(data.coverChips){coverChips.length=0;data.coverChips.forEach(function(c){coverChips.push(c);});renderCoverChips();syncCoverToPage();}
+        if(data.cover){var t2=document.getElementById('mpCoverTitle');if(t2&&data.cover.title)t2.value=data.cover.title;var s2=document.getElementById('mpCoverSub');if(s2&&data.cover.subtitle)s2.value=data.cover.subtitle;var b2=document.getElementById('mpCoverBadge');if(b2&&data.cover.badge)b2.value=data.cover.badge;syncCoverToPage();}
+        // Restore gallery photos
+        if(data.galleryPhotos&&data.galleryPhotos.length){galleryPhotos.forEach(function(p){URL.revokeObjectURL(p.url);});galleryPhotos=[];pnlSelectedPhotos.clear();
+        data.galleryPhotos.forEach(function(p){if(p.file){loadTasks.push(loadBlob(p.file).then(function(url){if(url)galleryPhotos.push({url:url,filename:p.filename,id:p.id});}));}else if(p.data){galleryPhotos.push({url:p.data,filename:p.filename,id:p.id});}});}
+        // Restore videos
+        if(data.videoSlots&&data.videoSlots.length){videoSlots.forEach(function(v){if(v.url)URL.revokeObjectURL(v.url);});videoSlots=[];
+        data.videoSlots.forEach(function(v){if(v.file){loadTasks.push(loadBlob(v.file).then(function(url){if(url)videoSlots.push({id:_vsid(),url:url,name:v.name||'视频'});}));}else if(v.data){videoSlots.push({id:_vsid(),url:v.data,name:v.name||v.title||'视频'});}});}
+        // Restore avatar
+        if(data.avatar){loadTasks.push(loadBlob(data.avatar).then(function(url){if(url){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=url;img.style.display='block';if(ph)ph.style.display='none';}}}));}
+        else if(data.heroImg){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=data.heroImg;img.style.display='block';if(ph)ph.style.display='none';}}
+        // Restore music playlist
+        if(data.playlist&&data.playlist.length){playlist.forEach(function(t){URL.revokeObjectURL(t.url);});playlist=[];
+        data.playlist.forEach(function(t){if(t.file){loadTasks.push(loadBlob(t.file).then(function(url){if(url)playlist.push({url:url,name:t.name||'音乐'});}));}else if(t.data){playlist.push({url:t.data,name:t.name||'音乐'});}});}
+        if(typeof data.musicIdx==='number')pIdx=data.musicIdx;
+        return Promise.all(loadTasks);
+      }).then(function(){
+        if(!videoSlots.filter(function(v){return v.url;}).length)addVideoSlot();
+        if(videoSlots.filter(function(v){return v.url;}).length)rebuildVideoGrid();
+        if(playlist.length&&pIdx>=playlist.length)pIdx=0;
+        if(playlist.length)loadTrack(pIdx);
+        updateMusicNow();
+        if(typeof renderBehaviors==='function')renderBehaviors();
+        if(typeof renderStory==='function')renderStory();
+        if(typeof renderRules==='function')renderRules();
+        renderPanelBehaviors();renderPanelStory();renderPanelTagManage();
+        if(typeof renderTagBar==='function')renderTagBar();
+        if(typeof refreshView==='function')refreshView();
+        renderPanelVideos();renderPanelPhotos();renderPanelTagRow();renderPanelMusic();
+        alert('数据导入成功！(Zip v4)');
+      });
+    }).catch(function(err){console.error(err);alert('导入失败：压缩包格式不正确或文件损坏。');});
+  } else {
+    // Legacy JSON import (v3 and below)
+    var reader=new FileReader();
+    reader.onload=function(ev){try{
+    var data=JSON.parse(ev.target.result);
+    if(data.behaviors){behaviors.length=0;data.behaviors.forEach(function(b){behaviors.push(b);});behaviors.forEach(function(b){if(b.photoData){var arr=b.photoData.split(','),mime=arr[0].match(/data:([^;]+)/);if(mime){var bytes=atob(arr[1]),u8=new Uint8Array(bytes.length);for(var j=0;j<bytes.length;j++)u8[j]=bytes.charCodeAt(j);b.photoUrl=URL.createObjectURL(new Blob([u8],{type:mime[1]}));}delete b.photoData;}});}
+if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){storyItems.push(s);});storyItems.forEach(function(s){if(s.photoData){var arr=s.photoData.split(','),mime=arr[0].match(/data:([^;]+)/);if(mime){var bytes=atob(arr[1]),u8=new Uint8Array(bytes.length);for(var j=0;j<bytes.length;j++)u8[j]=bytes.charCodeAt(j);s.photoUrl=URL.createObjectURL(new Blob([u8],{type:mime[1]}));}delete s.photoData;}});}if(data.oracles){oracles.length=0;data.oracles.forEach(function(o){oracles.push(o);});}if(data.rules){rules.length=0;data.rules.forEach(function(r){rules.push(r);});}if(data.allTags){ALL_TAGS.length=0;data.allTags.forEach(function(t){ALL_TAGS.push(t);});}if(data.photoTags)photoTags=data.photoTags;if(data.coverChips){coverChips.length=0;data.coverChips.forEach(function(c){coverChips.push(c);});renderCoverChips();syncCoverToPage();}if(data.cover){var t2=document.getElementById('mpCoverTitle');if(t2&&data.cover.title)t2.value=data.cover.title;var s2=document.getElementById('mpCoverSub');if(s2&&data.cover.subtitle)s2.value=data.cover.subtitle;var b2=document.getElementById('mpCoverBadge');if(b2&&data.cover.badge)b2.value=data.cover.badge;syncCoverToPage();}
+    if(data.galleryPhotos&&data.galleryPhotos.length){galleryPhotos.forEach(function(p){URL.revokeObjectURL(p.url);});galleryPhotos=[];pnlSelectedPhotos.clear();data.galleryPhotos.forEach(function(p){if(p.data){galleryPhotos.push({url:p.data,filename:p.filename||p.data.slice(0,30),id:p.id||('r_'+Math.random().toString(36).slice(2,10))});}});}
+    if(data.videoSlots&&data.videoSlots.length){videoSlots.forEach(function(v){if(v.url)URL.revokeObjectURL(v.url);});videoSlots=[];data.videoSlots.forEach(function(v){if(v.data){videoSlots.push({id:_vsid(),url:v.data,name:v.name||v.title||'视频'});}});if(!videoSlots.length)videoSlots.push({id:_vsid(),url:'',name:''});rebuildVideoGrid();}
+    if(data.heroImg){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=data.heroImg;img.style.display='block';if(ph)ph.style.display='none';}}
+    if(data.playlist&&data.playlist.length){playlist.forEach(function(t){URL.revokeObjectURL(t.url);});playlist=[];data.playlist.forEach(function(t){if(t.data)playlist.push({url:t.data,name:t.name||'音乐'});});}if(typeof data.musicIdx==='number')pIdx=data.musicIdx;if(playlist.length&&pIdx>=playlist.length)pIdx=0;if(playlist.length)loadTrack(pIdx);updateMusicNow();if(typeof renderBehaviors==='function')renderBehaviors();if(typeof renderStory==='function')renderStory();if(typeof renderRules==='function')renderRules();renderPanelBehaviors();renderPanelStory();renderPanelTagManage();if(typeof renderTagBar==='function')renderTagBar();if(typeof refreshView==='function')refreshView();renderPanelVideos();renderPanelPhotos();renderPanelTagRow();renderPanelMusic();alert('数据导入成功！(JSON v3)');}catch(err){console.error(err);alert('导入失败：文件格式不正确。');}};
+    reader.readAsText(file);
+  }
+  e.target.value='';});}
 
   // ── Reset ──
   var mpReset=document.getElementById('mpReset');if(mpReset)mpReset.addEventListener('click',function(){

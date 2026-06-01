@@ -1,0 +1,2 @@
+momo-backup-*.json filter=lfs diff=lfs merge=lfs -text
+momo-backup-*.zip filter=lfs diff=lfs merge=lfs -text
