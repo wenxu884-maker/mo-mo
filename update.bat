@@ -1,3 +1,3 @@
 @echo off
-powershell -ExecutionPolicy Bypass -File "%~dp0update.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update.ps1"
 pause
