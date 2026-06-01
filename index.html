@@ -1575,10 +1575,8 @@ if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){stor
 
   // ── Auto-load bundled data ──
   async function autoLoadData(){
-    // Skip if data already loaded (check localStorage first)
-    var saved=null;
-    try{saved=JSON.parse(localStorage.getItem('_momosite_data_ok')||'null');}catch(e){}
-    if(saved||behaviors.length>4||galleryPhotos.length>0||playlist.length>0){console.log('已有数据，跳过自动加载');return false;}
+    // Only skip if manually imported in this session (blob URLs survive only within same page load)
+    if(behaviors.length>4||galleryPhotos.length>0||playlist.length>0){console.log('已手动导入数据，跳过自动加载');return false;}
     try{
       var resp=await fetch('data/manifest.json');
       if(!resp.ok)return false;
@@ -1658,8 +1656,6 @@ if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){stor
       renderPanelVideos();renderPanelPhotos();renderPanelTagRow();renderPanelMusic();
       if(typeof renderCoverChips==='function')renderCoverChips();
       if(typeof syncCoverToPage==='function')syncCoverToPage();
-      // Mark as loaded so next visit skips
-      try{localStorage.setItem('_momosite_data_ok','1');}catch(e){}
       console.log('✅ 自动加载完成 ('+galleryPhotos.length+'张照片, '+behaviors.length+'个行为, '+videoSlots.filter(function(v){return v.url;}).length+'个视频, '+playlist.length+'首音乐)');
       return true;
     }catch(e){console.error('自动加载失败:',e.message);return false;}
