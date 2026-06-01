@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>momo-site 操作 SOP</title>
+<style>
+:root {
+  --bg:       #f4f7f0;
+  --bg2:      #eaf0e4;
+  --bg3:      #dde8d6;
+  --ink:      #2a3220;
+  --ink2:     #4a5e3a;
+  --ink3:     #7a9468;
+  --warn:     #d97706;
+  --danger:   #dc2626;
+  --code-bg:  #f0f2ec;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.8}
+.container{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:28px;font-weight:700;margin-bottom:8px;color:var(--ink)}
+.subtitle{color:var(--ink3);font-size:15px;margin-bottom:40px}
+h2{font-size:20px;font-weight:600;color:var(--ink2);margin:48px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--bg3)}
+h3{font-size:17px;font-weight:600;color:var(--ink);margin:28px 0 8px}
+h4{font-size:15px;font-weight:600;color:var(--ink2);margin:16px 0 6px}
+p{margin:8px 0}
+ul,ol{padding-left:22px;margin:8px 0}
+li{margin:4px 0}
+a{color:var(--ink2);text-decoration:underline}
+strong{color:var(--ink2)}
+code,pre{font-family:"Cascadia Code","Fira Code","Consolas",monospace;font-size:13px;background:var(--code-bg);border-radius:4px}
+code{padding:2px 6px}
+pre{padding:14px 18px;margin:12px 0;overflow-x:auto;border-radius:8px;line-height:1.6}
+pre code{padding:0;background:transparent}
+.note{padding:12px 16px;margin:12px 0;border-radius:8px;font-size:14px}
+.note.info{background:#e8f0f8;border-left:4px solid #3b82f6}
+.note.warn{background:#fffbeb;border-left:4px solid var(--warn)}
+.note.danger{background:#fef2f2;border-left:4px solid var(--danger)}
+.note .tag{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px}
+.note.info .tag{color:#1d4ed8}
+.note.warn .tag{color:#92400e}
+.note.danger .tag{color:#991b1b}
+.step{display:flex;gap:12px;margin:16px 0;align-items:flex-start}
+.step-num{flex-shrink:0;width:26px;height:26px;background:var(--ink2);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.step-content{flex:1}
+.table-wrap{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--bg3);padding:8px 12px;text-align:left;font-size:14px}
+th{background:var(--bg2);font-weight:600}
+td code{font-size:12px}
+.tagline{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-right:4px}
+.tagline.green{background:#dcfce7;color:#166534}
+.tagline.blue{background:#dbeafe;color:#1e40af}
+.tagline.yellow{background:#fef3c7;color:#92400e}
+.tagline.red{background:#fee2e2;color:#991b1b}
+.toc{padding:16px 20px;background:var(--bg2);border-radius:8px;margin:24px 0}
+.toc h4{margin:0 0 8px}
+.toc ol{margin:0;padding-left:20px}
+.toc li{font-size:14px;margin:2px 0}
+.toc a{text-decoration:none}
+.back{font-size:13px;color:var(--ink3);margin-bottom:24px}
+.back a{color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📋 momo-site 操作 SOP</h1>
+<p class="subtitle">2026-06-01 · 完整操作手册</p>
+
+<div class="toc">
+<h4>目录</h4>
+<ol>
+<li><a href="#overview">项目概览</a></li>
+<li><a href="#architecture">项目架构</a></li>
+<li><a href="#today">今天完成的操作</a></li>
+<li><a href="#update-data">日常更新数据</a></li>
+<li><a href="#update-code">日常更新代码</a></li>
+<li><a href="#troubleshoot">常见问题排查</a></li>
+<li><a href="#notes">注意事项</a></li>
+</ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="overview">1. 项目概览</h2>
+
+<table>
+<tr><th>项目</th><th>详情</th></tr>
+<tr><td>网站地址</td><td><a href="https://wenxu884-maker.github.io/mo-mo/">https://wenxu884-maker.github.io/mo-mo/</a></td></tr>
+<tr><td>GitHub 仓库</td><td><a href="https://github.com/wenxu884-maker/mo-mo">https://github.com/wenxu884-maker/mo-mo</a></td></tr>
+<tr><td>本地路径</td><td><code>C:\Users\32760\WorkBuddy\2026-06-01-17-22-11\momo-site\</code></td></tr>
+<tr><td>数据备份</td><td>GitHub Release → Assets 区域</td></tr>
+</table>
+
+<p>这个项目是「墨墨 momo · 使用说明书」网站。包含 13 个数据维度：</p>
+<ul>
+<li><strong>行为图鉴</strong>（4 个行为卡片，每个可配照片、标签、警告、回调）</li>
+<li><strong>相册集</strong>（81 张照片，支持标签筛选）</li>
+<li><strong>文具专题</strong>（图文/纯文条目）</li>
+<li><strong>影像档案</strong>（5 个视频位）</li>
+<li><strong>使用须知</strong>（多条目规则）</li>
+<li><strong>封面</strong>（标题、副标题、徽章）</li>
+<li><strong>音乐播放器</strong>（多曲目列表）</li>
+<li><strong>标签系统</strong>（全局标签、标签栏）</li>
+<li><strong>签语</strong>（占卜功能）</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="architecture">2. 项目架构</h2>
+
+<h3>2.1 文件结构</h3>
+
+<pre><code>momo-site/
+├── index.html          ← 唯一的代码文件（HTML + CSS + JS）
+├── sop.html            ← 本 SOP 文档
+├── .gitignore          ← 忽略 export zip 文件
+└── data/               ← 自动加载的数据（96 个文件）
+    ├── manifest.json   ← 数据清单（元数据 + 文件路径映射）
+    ├── avatar.png      ← 头像
+    ├── behaviors/      ← 行为图鉴的照片（4 张 JPG）
+    ├── story/          ← 文具专题的照片（2 张 JPG）
+    ├── photos/         ← 相册集照片（81 张 JPG）
+    ├── videos/         ← 视频文件（5 个 MP4）
+    └── music/          ← 音乐文件（1 个 MP3）</code></pre>
+
+<h3>2.2 数据流</h3>
+
+<p>网站有三种获取数据的途径，优先级从高到低：</p>
+
+<table>
+<tr><th>优先级</th><th>来源</th><th>说明</th></tr>
+<tr><td>1</td><td><strong>浏览器本地存储</strong></td><td>用户导入过数据、或在管理后台改过数据（localStorage / IndexedDB）</td></tr>
+<tr><td>2</td><td><strong>data/ 目录自动加载</strong></td><td>首次访问时从 <code>data/manifest.json</code> 自动拉取所有媒体文件</td></tr>
+<tr><td>3</td><td><strong>默认空数据</strong></td><td>没有任何数据时的占位状态</td></tr>
+</table>
+
+<div class="note info">
+<span class="tag">关键逻辑</span><br>
+<strong>浏览器有数据 → 不用自动加载。</strong> 只有首次访问（或清过缓存）才触发自动加载。加载完成后 localStorage 写入 <code>_momosite_data_ok=1</code>，下次跳过。
+</div>
+
+<h3>2.3 导出/导入格式</h3>
+
+<table>
+<tr><th>版本</th><th>格式</th><th>说明</th></tr>
+<tr><td>v4（当前）</td><td>Zip 压缩包</td><td>每个媒体文件独立，单文件 &lt; 7MB，适合 GitHub 仓库</td></tr>
+<tr><td>v3（旧版）</td><td>单 JSON 文件</td><td>Base64 内嵌，几百 MB 无法上传 GitHub，仅作兼容保留</td></tr>
+</table>
+
+<p>导入时自动识别格式：<code>.zip</code> 走 Zip 导入，<code>.json</code> 走旧版导入。</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="today">3. 今天完成的操作</h2>
+
+<h3>3.1 拖拽排序 — 全 5 个面板</h3>
+
+<p><strong>修改内容：</strong> 将原来只支持「使用须知」的硬编码拖拽函数，重构为通用函数 <code>initPanelDrag(cfg)</code>，然后应用到全部 5 个面板。</p>
+
+<table>
+<tr><th>面板</th><th>数据数组</th><th>选择器</th></tr>
+<tr><td>行为图鉴</td><td><code>behaviors[]</code></td><td><code>.mp-content-item</code>，<code>data-bidx</code></td></tr>
+<tr><td>使用须知</td><td><code>rules[]</code></td><td><code>.mp-content-item</code>，<code>data-ridx</code></td></tr>
+<tr><td>相册集</td><td><code>galleryPhotos[]</code></td><td><code>.mp-file-item</code>，<code>data-pidx</code></td></tr>
+<tr><td>文具专题</td><td><code>storyItems[]</code></td><td><code>.mp-content-item</code>，<code>data-sidx</code></td></tr>
+<tr><td>影像档案</td><td><code>videoSlots[]</code></td><td><code>.mp-file-item</code>，<code>data-vidx</code>，带 <code>onReorder</code> 回调</td></tr>
+</table>
+
+<div class="note info">
+<span class="tag">技术要点</span><br>
+<code>initPanelDrag(cfg)</code> 接收配置对象 <code>{id, arr, rfn, attr, sel, onReorder}</code>。其中 <code>onReorder</code> 是可选回调，用于影像档案这种 filtered-array 需要自定义重排逻辑的场景。
+</div>
+
+<h3>3.2 Zip 导出/导入 v4</h3>
+
+<p><strong>修改内容：</strong></p>
+<ul>
+<li>引入 JSZip CDN：<code>cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js</code></li>
+<li><code>exportData()</code> 重写：创建 zip，内含 <code>manifest.json</code> + 各媒体文件夹（behaviors/、story/、photos/、videos/、music/、avatar.png）</li>
+<li><code>importData()</code> 重写：检测 <code>.zip</code> 扩展名 → <code>JSZip.loadAsync()</code> → 解析 manifest → 用 blob URL 还原所有文件</li>
+<li>文件选择器 <code>accept=".json,.zip"</code>（之前只接受 .json 导致 zip 选不上）</li>
+</ul>
+
+<div class="note warn">
+<span class="tag">已知问题及修复</span><br>
+最初 <code>accept=".json"</code> 只接受 JSON 文件，导致浏览器文件选择器中无法选中 .zip 文件。已改为 <code>accept=".json,.zip"</code>。
+</div>
+
+<h3>3.3 数据自动加载</h3>
+
+<p><strong>修改内容：</strong> 新增 <code>autoLoadData()</code> 函数，首次访问时自动从 <code>data/</code> 目录加载所有数据。</p>
+
+<p><strong>两阶段加载：</strong></p>
+<table>
+<tr><th>阶段</th><th>内容</th><th>耗时</th></tr>
+<tr><td>① 立即</td><td>默认空数据渲染（占位卡片）</td><td>&lt; 100ms</td></tr>
+<tr><td>② 文字重渲染</td><td>manifest.json 加载 → 文字数据替换 → 重新渲染面板</td><td>&lt; 1s</td></tr>
+<tr><td>③ 媒体后台加载</td><td>照片/视频/音乐逐个下载，下载完自动刷新视图</td><td>~30s（不阻塞使用）</td></tr>
+</table>
+
+<div class="note info">
+<span class="tag">修复记录</span><br>
+第一版 <code>autoLoadData()</code> 是用 <code>Promise.all</code> 等 81 张照片全部下载完才渲染，导致页面空白 2~3 分钟。已改为两阶段：文字数据先渲染，媒体文件后台加载，超时保护 15~60s。
+</div>
+
+<h3>3.4 GitHub 部署</h3>
+
+<p><strong>代码部署：</strong></p>
+<pre><code>cd C:/Users/32760/WorkBuddy/2026-06-01-17-22-11/momo-site
+git add index.html           # 修改代码
+git add data/ .gitignore     # 新增数据目录
+git commit -m "feat: xxx"
+git push origin main</code></pre>
+
+<p><strong>数据备份（备用）：</strong></p>
+<pre><code># GitHub Release 页面 → Assets → 拖入 momo-backup-xxxx-xx-xx.zip → Update Release</code></pre>
+
+<p><strong>GitHub Pages 自动部署：</strong> 每次 push 到 main 分支后，GitHub 自动构建并发布到 <code>https://wenxu884-maker.github.io/mo-mo/</code>，耗时约 1~2 分钟。</p>
+
+<div class="note warn">
+<span class="tag">重要</span><br>
+GitHub 仓库单个文件不能超过 100MB，Release 最大 2GB。这就是为什么导出必须用 Zip 格式（单文件 &lt; 7MB），而不是把所有 Base64 塞进一个 JSON。
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="update-data">4. 日常更新数据</h2>
+
+<p>当你在网站上改过数据（加照片、改行为、换音乐等），按以下步骤更新网站：</p>
+
+<div class="step">
+<div class="step-num">1</div>
+<div class="step-content">
+<h4>在网站上编辑数据</h4>
+<p>打开 <a href="https://wenxu884-maker.github.io/mo-mo/">网站</a> → 管理面板编辑 → 数据自动保存在浏览器。</p>
+<p><strong>这一步可跳过：</strong> 如果你之前已经编辑过并有数据在浏览器里，直接到下一步。</p>
+</div>
+</div>
+
+<div class="step">
+<div class="step-num">2</div>
+<div class="step-content">
+<h4>导出数据</h4>
+<p>点右上角「导出数据」按钮 → 下载 <code>momo-backup-2026-xx-xx.zip</code></p>
+<p>文件会保存在桌面上。</p>
+</div>
+</div>
+
+<div class="step">
+<div class="step-num">3</div>
+<div class="step-content">
+<h4>替换 data/ 目录</h4>
+<p>告诉我 zip 文件的路径（或直接拖给我），我会帮你：</p>
+<ul>
+<li>解压覆盖 <code>data/</code> 目录</li>
+<li>提交到 git</li>
+<li>推送到 GitHub</li>
+</ul>
+<p>1~2 分钟后网站自动更新。</p>
+</div>
+</div>
+
+<div class="note info">
+<span class="tag">快捷方式</span><br>
+以后你也可以自己在终端跑（Git Bash）：<br>
+<pre><code>cd C:/Users/32760/WorkBuddy/2026-06-01-17-22-11/momo-site
+rm -rf data/ && unzip ~/Desktop/momo-backup-*.zip -d data/
+git add data/ && git commit -m "data: update" && git push</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="update-code">5. 日常更新代码</h2>
+
+<p>当你需要修改网站功能（不是数据），比如加新的面板、改样式，按以下步骤：</p>
+
+<div class="step">
+<div class="step-num">1</div>
+<div class="step-content">
+<h4>告诉我需求</h4>
+<p>描述你想改什么，我会直接修改 <code>index.html</code> 并推送。</p>
+</div>
+</div>
+
+<div class="step">
+<div class="step-num">2</div>
+<div class="step-content">
+<h4>验证</h4>
+<p>等我推完，用浏览器或无痕窗口打开网站检查效果。</p>
+</div>
+</div>
+
+<div class="step">
+<div class="step-num">3</div>
+<div class="step-content">
+<h4>有问题就回滚</h4>
+<p>出了 bug 告诉我，我可以 <code>git revert</code> 回到上一个版本。</p>
+</div>
+</div>
+
+<p><strong>代码文件只有 <code>index.html</code> 一个文件。</strong> 所有 HTML + CSS + JS 都在里面，没有多余的构建步骤。</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="troubleshoot">6. 常见问题排查</h2>
+
+<h3>🔴 网站打开是空白的</h3>
+
+<table>
+<tr><th>可能原因</th><th>解决方法</th></tr>
+<tr>
+<td>自动加载正在下载 300MB 的照片（后台进行中）</td>
+<td>等 30 秒 ~ 1 分钟。控制台会显示「📦 加载进度」。已经渲染过文字内容就应该有字，如果字也没有 → 看下一条</td>
+</tr>
+<tr>
+<td>JS 加载报错，某张照片加载失败阻塞了渲染</td>
+<td>打开 F12 控制台看报错。已加了超时和错误处理，单张照片失败不影响其他</td>
+</tr>
+<tr>
+<td>GitHub Pages 还没部署完成</td>
+<td>等 1~2 分钟刷新。如果超过 5 分钟，去 GitHub Actions 看部署状态</td>
+</tr>
+<tr>
+<td>浏览器缓存了旧版 HTML</td>
+<td><strong>Ctrl+Shift+R</strong> 强制刷新，或用无痕窗口测试</td>
+</tr>
+</table>
+
+<h3>🔴 照片不显示（占位框但没有图片）</h3>
+
+<table>
+<tr><th>可能原因</th><th>解决方法</th></tr>
+<tr>
+<td>照片还在下载中</td>
+<td>看控制台有没有「📦 加载进度」。小照片几秒，大照片十几秒</td>
+</tr>
+<tr>
+<td>data/ 目录里缺少这张照片</td>
+<td>可能是导出时遗漏或路径不匹配。重新导出 zip 并替换 data/</td>
+</tr>
+<tr>
+<td>文件名编码问题</td>
+<td>确认 manifest.json 里的路径和实际文件名一致</td>
+</tr>
+</table>
+
+<h3>🔴 git push 失败</h3>
+
+<table>
+<tr><th>可能原因</th><th>解决方法</th></tr>
+<tr>
+<td>网络问题</td>
+<td>重试。如果连续失败，换 VPN 或等网络恢复</td>
+</tr>
+<tr>
+<td>单个文件超过 100MB</td>
+<td>把大文件拆小，或放到 GitHub Release（我知道哪些文件大，告诉我路径即可）</td>
+</tr>
+<tr>
+<td>冲突（别人也 push 了）</td>
+<td><code>git pull --rebase</code> 然后重试 push</td>
+</tr>
+</table>
+
+<h3>🔴 导入 zip 没反应</h3>
+
+<table>
+<tr><th>可能原因</th><th>解决方法</th></tr>
+<tr>
+<td>zip 文件损坏</td>
+<td>重新导出一次</td>
+</tr>
+<tr>
+<td>zip 里缺少 manifest.json</td>
+<td>确认是用网站的「导出数据」按钮生成的 zip，不是自己打包的</td>
+</tr>
+<tr>
+<td>浏览器不支持 JSZip</td>
+<td>极少数情况。换 Chrome/Edge 试试</td>
+</tr>
+</table>
+
+<h3>🔴 想回到某个时间点的数据状态</h3>
+
+<p>GitHub Release 的 Assets 里有多份历史备份 zip。下载对应日期的 zip → 网站上点「导入数据」→ 恢复。</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="notes">7. 注意事项</h2>
+
+<h3>7.1 数据安全</h3>
+
+<ul>
+<li><strong>每次大改数据前先导出备份</strong>，zip 文件放在桌面上就行</li>
+<li><strong>浏览器清理缓存会丢失数据</strong>，所以导出 + 推送到 data/ 很重要</li>
+<li>data/ 目录就是一个只读快照，网站不会修改它——只有你导出新 zip 替换它才会变</li>
+</ul>
+
+<h3>7.2 文件大小限制</h3>
+
+<table>
+<tr><th>位置</th><th>限制</th><th>备注</th></tr>
+<tr><td>GitHub 仓库单文件</td><td>100 MB</td><td>超出会 push 失败。当前所有文件 &lt; 7MB，安全</td></tr>
+<tr><td>GitHub Release</td><td>2 GB</td><td>备份 zip 的存放上限</td></tr>
+<tr><td>GitHub Pages 带宽</td><td>100 GB/月</td><td>个人网站够用了</td></tr>
+</table>
+
+<h3>7.3 不要做这些事</h3>
+
+<ul>
+<li><strong>不要删 <code>data/</code> 目录</strong> — 删了别人打开网站就是空的</li>
+<li><strong>不要手动编辑 <code>manifest.json</code></strong> — 它是导出时自动生成的，格式错了网站加载会失败</li>
+<li><strong>不要把 300MB 的旧版 JSON 推送到仓库</strong> — 会导致 push 失败。用 zip 格式</li>
+<li><strong>不要改 <code>.gitignore</code> 里的 <code>momo-backup-*.zip</code></strong> — 防止大量备份文件进入仓库</li>
+<li><strong>不要同时用两个浏览器编辑数据</strong> — 数据存在各自的 localStorage 里，不会同步，最终以你导出那个为准</li>
+</ul>
+
+<h3>7.4 关于 workbuddy 工作目录</h3>
+
+<p>项目的实际路径是 <code>C:\Users\32760\WorkBuddy\2026-06-01-17-22-11\momo-site\</code>，<code>2026-06-01-17-22-11</code> 是 workbuddy 自动创建的工作区 ID。如果以后换了新的 workbuddy 会话，可能需要重新 clone：</p>
+
+<pre><code>git clone https://github.com/wenxu884-maker/mo-mo.git C:/Users/32760/WorkBuddy/新工作区ID/momo-site</code></pre>
+
+<hr style="margin:48px 0 24px;border:none;border-top:1px solid var(--bg3)">
+
+<p style="text-align:center;color:var(--ink3);font-size:13px">最后更新：2026-06-01 · momo-site SOP · <a href="index.html">← 返回网站</a></p>
+
+</div>
+</body>
+</html>
