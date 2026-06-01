@@ -96,6 +96,7 @@ body{
   .video-slot{min-height:180px}
   /* Rules */
   .rule-item{flex-wrap:wrap;gap:0.6rem;padding:0.8rem 1rem}
+  .rule-item .rule-del-btn{opacity:0.7;top:4px;right:4px;width:20px;height:20px;font-size:14px}
   .rule-tag{margin-left:0}
   /* Oracle */
   .oracle-box{padding:1.5rem 1rem}
@@ -355,14 +356,22 @@ h1.hero-title{font-size:clamp(3rem,7vw,5.5rem);font-weight:400;letter-spacing:0.
 
 /* ── Rules ── */
 .rules-list{display:flex;flex-direction:column;gap:1px}
-.rule-item{display:flex;align-items:flex-start;gap:1.2rem;padding:1rem 1.2rem;background:var(--paper);border-left:2px solid transparent;transition:background 0.2s,border-color 0.2s}
+.rule-item{display:flex;align-items:flex-start;gap:1.2rem;padding:1rem 1.2rem;background:var(--paper);border-left:2px solid transparent;transition:background 0.2s,border-color 0.2s;position:relative;touch-action:none;user-select:none}
 .rule-item:first-child{border-radius:var(--radius) var(--radius) 0 0}
 .rule-item:last-child{border-radius:0 0 var(--radius) var(--radius)}
 .rule-item:hover{background:var(--bg2);border-left-color:var(--gold2)}
-.rule-num{font-size:20px;font-weight:400;color:var(--border2);min-width:32px;line-height:1;font-style:italic}
+.rule-item.rule-dragging{opacity:0.3;background:var(--bg2)}
+.rule-item.rule-drag-over{transform:translateY(0)}
+.rule-num{font-size:20px;font-weight:400;color:var(--border2);min-width:32px;line-height:1;font-style:italic;pointer-events:none}
 .rule-title{font-size:13px;margin-bottom:3px;letter-spacing:0.05em;color:var(--ink)}
 .rule-body{font-size:12px;color:var(--text2);line-height:1.7}
 .rule-tag{margin-left:auto;font-size:10px;letter-spacing:0.15em;padding:3px 10px;border:0.5px solid var(--border);color:var(--text3);border-radius:100px;white-space:nowrap;align-self:center;background:var(--bg2)}
+.rule-item .rule-del-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:none;background:transparent;color:var(--text3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s,background 0.2s,color 0.2s;line-height:1;padding:0}
+.rule-item:hover .rule-del-btn{opacity:1}
+.rule-item .rule-del-btn:hover{background:var(--color-error,#ef4444);color:#fff}
+.rule-add-btn{display:block;width:100%;padding:12px;border:1.5px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--text3);font-size:13px;cursor:pointer;margin-top:8px;transition:all 0.2s;letter-spacing:0.05em}
+.rule-add-btn:hover{border-color:var(--gold2);color:var(--gold2);background:var(--bg2)}
+.rule-ghost{pointer-events:none;z-index:9999;opacity:0.92;box-shadow:0 12px 40px rgba(0,0,0,0.18);border-radius:var(--radius);background:var(--paper);transform:translate(-50%,-50%) scale(1.03);transition:none}
 
 /* ── Oracle ── */
 .oracle-box{max-width:520px;margin:0 auto;padding:2rem;border:0.5px solid var(--border2);border-radius:var(--radius);position:relative;background:rgba(255,254,248,0.85);backdrop-filter:blur(8px)}
@@ -783,7 +792,7 @@ if(window.__PUBLISHED__){var _pd=window.__PUBLISHED__;
   if(_pd.coverChips){coverChips=[];_pd.coverChips.forEach(function(c){coverChips.push(c);});}
   if(_pd.cover){document.addEventListener('DOMContentLoaded',function(){var t2=document.getElementById('mpCoverTitle');if(t2&&_pd.cover.title)t2.value=_pd.cover.title;var s2=document.getElementById('mpCoverSub');if(s2&&_pd.cover.subtitle)s2.value=_pd.cover.subtitle;var b2=document.getElementById('mpCoverBadge');if(b2&&_pd.cover.badge)b2.value=_pd.cover.badge;});}
   if(_pd.galleryPhotos&&_pd.galleryPhotos.length){galleryPhotos=[];_pd.galleryPhotos.forEach(function(p){if(p.data)galleryPhotos.push({url:p.data,filename:p.filename||p.data.slice(0,30),id:p.id||('r_'+Math.random().toString(36).slice(2,10))});});}
-  if(_pd.videoSlots&&_pd.videoSlots.length){videoSlots=[];_pd.videoSlots.forEach(function(v){if(v.data)videoSlots.push({title:v.title||'视频',url:v.data});});if(!videoSlots.length)videoSlots.push({title:'',url:''});}
+  if(_pd.videoSlots&&_pd.videoSlots.length){videoSlots=[];_pd.videoSlots.forEach(function(v){if(v.data)videoSlots.push({id:_vsid(),url:v.data,name:v.name||v.title||'视频'});});if(!videoSlots.length)videoSlots.push({id:_vsid(),url:'',name:''});}
   if(_pd.heroImg){document.addEventListener('DOMContentLoaded',function(){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=_pd.heroImg;img.style.display='block';if(ph)ph.style.display='none';}});}
   if(_pd.playlist&&_pd.playlist.length){playlist=[];_pd.playlist.forEach(function(t){if(t.data)playlist.push({url:t.data,name:t.name||'音乐'});});}
   if(typeof _pd.musicIdx==='number')pIdx=_pd.musicIdx;
@@ -906,9 +915,100 @@ function renderRules(){
   var rl=document.getElementById('rulesList');if(!rl)return;
   rl.innerHTML='';
   rules.forEach(function(r,i){
-    var el=document.createElement('div');el.className='rule-item';
-    el.innerHTML='<span class="rule-num">'+(i<9?'0':'')+(i+1)+'</span><div style="flex:1"><div class="rule-title" contenteditable="true">'+r.title+'</div><div class="rule-body" contenteditable="true">'+r.body+'</div></div><span class="rule-tag" contenteditable="true">'+r.tag+'</span>';
+    var el=document.createElement('div');el.className='rule-item';el.setAttribute('data-rule-idx',i);
+    el.innerHTML='<span class="rule-num">'+(i<9?'0':'')+(i+1)+'</span><div style="flex:1"><div class="rule-title" contenteditable="true">'+r.title+'</div><div class="rule-body" contenteditable="true">'+r.body+'</div></div><span class="rule-tag" contenteditable="true">'+r.tag+'</span><button class="rule-del-btn" data-action="delRule" data-idx="'+i+'" title="删除此条款">&times;</button>';
     rl.appendChild(el);
+  });
+  // Add new rule button
+  var addBtn=document.createElement('button');addBtn.className='rule-add-btn';addBtn.textContent='+ 新增条款';
+  addBtn.addEventListener('click',function(){rules.push({title:"新条款",body:"请编辑此条款内容。",tag:"待分类"});saveAllRules();renderRules();renderPanelBehaviors();});
+  rl.appendChild(addBtn);
+  // Save contenteditable changes on blur
+  rl.querySelectorAll('[contenteditable]').forEach(function(ed){ed.addEventListener('blur',function(){saveAllRules();});});
+  // Delete buttons
+  rl.querySelectorAll('[data-action="delRule"]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var i=parseInt(btn.dataset.idx);if(!confirm('确定删除条款 "'+rules[i].title+'" 吗？'))return;rules.splice(i,1);renderRules();renderPanelBehaviors();});});
+  // Initialize drag to reorder
+  initRuleDrag();
+}
+// Save contenteditable rule changes back to rules array
+function saveAllRules(){
+  var rl=document.getElementById('rulesList');if(!rl)return;
+  rl.querySelectorAll('.rule-item').forEach(function(item){
+    var i=parseInt(item.getAttribute('data-rule-idx'));if(isNaN(i)||!rules[i])return;
+    var t=item.querySelector('.rule-title'),b=item.querySelector('.rule-body'),g=item.querySelector('.rule-tag');
+    if(t)rules[i].title=t.textContent.trim();if(b)rules[i].body=b.textContent.trim();if(g)rules[i].tag=g.textContent.trim();
+  });
+}
+// ── Drag to reorder rules (long-press 500ms) ──
+var _rDrag={active:false,item:null,idx:-1,ghost:null,timer:null,offY:0};
+function initRuleDrag(){
+  var list=document.getElementById('rulesList');if(!list)return;
+  list.querySelectorAll('.rule-item').forEach(function(item,i){
+    item.addEventListener('pointerdown',function(e){
+      if(e.target.closest('[contenteditable]')||e.target.closest('button'))return;
+      _rDrag.timer=setTimeout(function(){
+        _rDrag.active=true;_rDrag.item=item;_rDrag.idx=parseInt(item.getAttribute('data-rule-idx'));_rDrag.offY=0;
+        var rect=item.getBoundingClientRect();
+        _rDrag.ghost=item.cloneNode(true);_rDrag.ghost.classList.add('rule-ghost');
+        _rDrag.ghost.style.position='fixed';_rDrag.ghost.style.left=(rect.left+rect.width/2)+'px';_rDrag.ghost.style.top=(rect.top+rect.height/2)+'px';
+        _rDrag.ghost.style.width=rect.width+'px';document.body.appendChild(_rDrag.ghost);
+        item.classList.add('rule-dragging');item.setPointerCapture(e.pointerId);
+      },500);
+    });
+    item.addEventListener('pointermove',function(e){
+      if(!_rDrag.active||_rDrag.item!==item)return;
+      _rDrag.offY=e.clientY-(function(){var r=item.getBoundingClientRect();return r.top+r.height/2;})();
+      if(_rDrag.ghost){_rDrag.ghost.style.left=e.clientX+'px';_rDrag.ghost.style.top=e.clientY+'px';}
+      // Shift other items
+      list.querySelectorAll('.rule-item:not(.rule-dragging)').forEach(function(o){
+        var or=o.getBoundingClientRect(),omid=or.top+or.height/2;
+        o.style.transition='transform 0.12s ease';
+        o.style.transform=e.clientY>omid?'translateY(-'+(item.offsetHeight+8)+'px)':'';
+      });
+    });
+    item.addEventListener('pointerup',function(e){
+      clearTimeout(_rDrag.timer);
+      if(!_rDrag.active||_rDrag.item!==item){
+        _rDrag.active=false;_rDrag.item=null;return;
+      }
+      // Clean ghost
+      if(_rDrag.ghost){_rDrag.ghost.remove();_rDrag.ghost=null;}
+      item.classList.remove('rule-dragging');
+      // Reset all items
+      list.querySelectorAll('.rule-item').forEach(function(o){o.style.transition='';o.style.transform='';});
+      _rDrag.active=false;_rDrag.item=null;
+      // Calculate target position
+      var newIdx=_rDrag.idx,total=0,before=true;
+      rules.forEach(function(r,j){
+        if(j===_rDrag.idx)return;
+        var o=list.querySelector('.rule-item[data-rule-idx="'+j+'"]');if(!o)return;
+        var or=o.getBoundingClientRect();
+        if(e.clientY>or.top+or.height/2){total++;if(j>_rDrag.idx)before=false;}
+        else{if(j<_rDrag.idx)before=false;}
+      });
+      if(before)newIdx=_rDrag.idx-total;else newIdx=_rDrag.idx+total;
+      newIdx=Math.max(0,Math.min(rules.length-1,newIdx));
+      if(newIdx!==_rDrag.idx){
+        var moved=rules.splice(_rDrag.idx,1)[0];rules.splice(newIdx,0,moved);
+        saveAllRules();renderRules();renderPanelBehaviors();
+      }
+    });
+    item.addEventListener('pointercancel',function(){
+      clearTimeout(_rDrag.timer);
+      if(_rDrag.active&&_rDrag.item===item){
+        if(_rDrag.ghost){_rDrag.ghost.remove();_rDrag.ghost=null;}
+        item.classList.remove('rule-dragging');list.querySelectorAll('.rule-item').forEach(function(o){o.style.transition='';o.style.transform='';});
+        _rDrag.active=false;_rDrag.item=null;
+      }
+    });
+    item.addEventListener('lostpointercapture',function(){
+      clearTimeout(_rDrag.timer);
+      if(_rDrag.active&&_rDrag.item===item){
+        if(_rDrag.ghost){_rDrag.ghost.remove();_rDrag.ghost=null;}
+        item.classList.remove('rule-dragging');list.querySelectorAll('.rule-item').forEach(function(o){o.style.transition='';o.style.transform='';});
+        _rDrag.active=false;_rDrag.item=null;
+      }
+    });
   });
 }
 renderRules();
@@ -1108,6 +1208,23 @@ function addVideoSlot(src,name){
     fi.addEventListener('change',function(e){var f=e.target.files[0];if(!f)return;var url=URL.createObjectURL(f);slot.innerHTML='<video src="'+url+'" controls style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.9"></video><div class="play-icon">▶</div>';var idx=videoSlots.findIndex(function(v){return v.id===id;});if(idx>=0){videoSlots[idx].url=url;videoSlots[idx].name=f.name;}});
   }
   var vg=document.getElementById('videoGrid');if(vg)vg.appendChild(slot);
+}
+function rebuildVideoGrid(){
+  var vg=document.getElementById('videoGrid');if(!vg)return;
+  vg.innerHTML='';
+  videoSlots.forEach(function(v){
+    var slot=document.createElement('div');slot.className='video-slot';
+    if(v.url){
+      slot.innerHTML='<video src="'+v.url+'" controls style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.9"></video><div class="play-icon">▶</div>';
+    } else {
+      slot.innerHTML='<span class="video-slot-label">点击上传视频</span><span class="video-upload-hint">支持 MP4 / MOV / WebM</span><div class="play-icon">▶</div><input type="file" accept="video/*" style="display:none">';
+      var fi=slot.querySelector('input'),id=v.id;
+      slot.addEventListener('click',function(){fi.click();});
+      fi.addEventListener('change',function(e){var f=e.target.files[0];if(!f)return;var url=URL.createObjectURL(f);slot.innerHTML='<video src="'+url+'" controls style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.9"></video><div class="play-icon">▶</div>';var idx=videoSlots.findIndex(function(vv){return vv.id===id;});if(idx>=0){videoSlots[idx].url=url;videoSlots[idx].name=f.name;}});
+    }
+    vg.appendChild(slot);
+  });
+  if(!videoSlots.length)addVideoSlot();
 }
 (function initVideo(){addVideoSlot();})();
 
@@ -1326,7 +1443,7 @@ function addVideoSlot(src,name){
   function exportData(){
     var btn=document.getElementById('mpExport');if(btn){btn.textContent='⏳ 打包中...';btn.disabled=true;}
     var pp=galleryPhotos.map(function(p){return blobToBase64(p.url).then(function(b64){return{filename:p.filename,id:p.id,data:b64};}).catch(function(){return{filename:p.filename,id:p.id,data:null};});});
-    var vp=videoSlots.filter(function(v){return v.url;}).map(function(v){return blobToBase64(v.url).then(function(b64){return{title:v.title,data:b64};}).catch(function(){return{title:v.title,data:null};});});
+    var vp=videoSlots.filter(function(v){return v.url;}).map(function(v){return blobToBase64(v.url).then(function(b64){return{name:v.name,data:b64};}).catch(function(){return{name:v.name,data:null};});});
     // Convert behavior photos to base64
     var bp=[];behaviors.forEach(function(b,idx){if(b.photoUrl)bp.push(blobToBase64(b.photoUrl).then(function(b64){return{idx:idx,data:b64};}).catch(function(){return{idx:idx,data:null};}));});
     // Convert story photos to base64
@@ -1360,9 +1477,9 @@ function addVideoSlot(src,name){
   if(mpImport&&mpImportInput){mpImport.addEventListener('click',function(){mpImportInput.click();});mpImportInput.addEventListener('change',function(e){var file=e.target.files[0];if(!file)return;if(!confirm('导入将覆盖当前所有内容数据。确定继续？')){e.target.value='';return;}var reader=new FileReader();reader.onload=function(ev){try{var data=JSON.parse(ev.target.result);if(data.behaviors){behaviors.length=0;data.behaviors.forEach(function(b){behaviors.push(b);});behaviors.forEach(function(b){if(b.photoData){var arr=b.photoData.split(','),mime=arr[0].match(/data:([^;]+)/);if(mime){var bytes=atob(arr[1]),u8=new Uint8Array(bytes.length);for(var j=0;j<bytes.length;j++)u8[j]=bytes.charCodeAt(j);b.photoUrl=URL.createObjectURL(new Blob([u8],{type:mime[1]}));}delete b.photoData;}});}
 if(data.storyItems){storyItems.length=0;data.storyItems.forEach(function(s){storyItems.push(s);});storyItems.forEach(function(s){if(s.photoData){var arr=s.photoData.split(','),mime=arr[0].match(/data:([^;]+)/);if(mime){var bytes=atob(arr[1]),u8=new Uint8Array(bytes.length);for(var j=0;j<bytes.length;j++)u8[j]=bytes.charCodeAt(j);s.photoUrl=URL.createObjectURL(new Blob([u8],{type:mime[1]}));}delete s.photoData;}});}if(data.oracles){oracles.length=0;data.oracles.forEach(function(o){oracles.push(o);});}if(data.rules){rules.length=0;data.rules.forEach(function(r){rules.push(r);});}if(data.allTags){ALL_TAGS.length=0;data.allTags.forEach(function(t){ALL_TAGS.push(t);});}if(data.photoTags)photoTags=data.photoTags;if(data.coverChips){coverChips.length=0;data.coverChips.forEach(function(c){coverChips.push(c);});renderCoverChips();syncCoverToPage();}if(data.cover){var t2=document.getElementById('mpCoverTitle');if(t2&&data.cover.title)t2.value=data.cover.title;var s2=document.getElementById('mpCoverSub');if(s2&&data.cover.subtitle)s2.value=data.cover.subtitle;var b2=document.getElementById('mpCoverBadge');if(b2&&data.cover.badge)b2.value=data.cover.badge;syncCoverToPage();}// Restore photos from base64 if v2 export
     if(data.galleryPhotos&&data.galleryPhotos.length){galleryPhotos.forEach(function(p){URL.revokeObjectURL(p.url);});galleryPhotos=[];pnlSelectedPhotos.clear();data.galleryPhotos.forEach(function(p){if(p.data){galleryPhotos.push({url:p.data,filename:p.filename||p.data.slice(0,30),id:p.id||('r_'+Math.random().toString(36).slice(2,10))});}});}// Restore videos from base64
-    if(data.videoSlots&&data.videoSlots.length){videoSlots.forEach(function(v){if(v.url)URL.revokeObjectURL(v.url);});videoSlots=[];data.videoSlots.forEach(function(v){if(v.data){videoSlots.push({title:v.title||'视频',url:v.data});}});if(!videoSlots.length)videoSlots.push({title:'',url:''});}// Restore avatar from base64
+    if(data.videoSlots&&data.videoSlots.length){videoSlots.forEach(function(v){if(v.url)URL.revokeObjectURL(v.url);});videoSlots=[];data.videoSlots.forEach(function(v){if(v.data){videoSlots.push({id:_vsid(),url:v.data,name:v.name||v.title||'视频'});}});if(!videoSlots.length)videoSlots.push({id:_vsid(),url:'',name:''});rebuildVideoGrid();}// Restore avatar from base64
     if(data.heroImg){var img=document.getElementById('heroImg'),ph=document.getElementById('heroPh');if(img){img.src=data.heroImg;img.style.display='block';if(ph)ph.style.display='none';}}// Restore music playlist
-    if(data.playlist&&data.playlist.length){playlist.forEach(function(t){URL.revokeObjectURL(t.url);});playlist=[];data.playlist.forEach(function(t){if(t.data)playlist.push({url:t.data,name:t.name||'音乐'});});}if(typeof data.musicIdx==='number')pIdx=data.musicIdx;if(playlist.length&&pIdx>=playlist.length)pIdx=0;if(typeof renderBehaviors==='function')renderBehaviors();if(typeof renderStory==='function')renderStory();if(typeof renderRules==='function')renderRules();renderPanelBehaviors();renderPanelStory();renderPanelTagManage();if(typeof renderTagBar==='function')renderTagBar();if(typeof refreshView==='function')refreshView();if(typeof renderPanelVideos==='function')renderPanelVideos();if(typeof renderPanelPhotos==='function')renderPanelPhotos();if(typeof renderPanelTagRow==='function')renderPanelTagRow();if(typeof renderPanelMusic==='function')renderPanelMusic();alert('数据导入成功！');}catch(err){alert('导入失败：文件格式不正确。');}};reader.readAsText(file);e.target.value='';});}
+    if(data.playlist&&data.playlist.length){playlist.forEach(function(t){URL.revokeObjectURL(t.url);});playlist=[];data.playlist.forEach(function(t){if(t.data)playlist.push({url:t.data,name:t.name||'音乐'});});}if(typeof data.musicIdx==='number')pIdx=data.musicIdx;if(playlist.length&&pIdx>=playlist.length)pIdx=0;if(playlist.length)loadTrack(pIdx);updateMusicNow();if(typeof renderBehaviors==='function')renderBehaviors();if(typeof renderStory==='function')renderStory();if(typeof renderRules==='function')renderRules();renderPanelBehaviors();renderPanelStory();renderPanelTagManage();if(typeof renderTagBar==='function')renderTagBar();if(typeof refreshView==='function')refreshView();if(typeof renderPanelVideos==='function')renderPanelVideos();if(typeof renderPanelPhotos==='function')renderPanelPhotos();if(typeof renderPanelTagRow==='function')renderPanelTagRow();if(typeof renderPanelMusic==='function')renderPanelMusic();alert('数据导入成功！');}catch(err){alert('导入失败：文件格式不正确。');}};reader.readAsText(file);e.target.value='';});}
 
   // ── Reset ──
   var mpReset=document.getElementById('mpReset');if(mpReset)mpReset.addEventListener('click',function(){
